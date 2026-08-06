@@ -11,19 +11,19 @@ readme = "README.md"
 repository = "https://github.com/Yousa-Mirage/cidian"
 homepage = "https://github.com/Yousa-Mirage/cidian"
 
-keywords = ["chinese", "dictionary", "sogou", "scel"]
-categories = ["text-processing", "parser-implementations"]
+keywords = ["chinese", "dictionary", "scel", "sogou"]
+categories = ["parser-implementations", "text-processing"]
 
-exclude = ["tests/**", "**/*.scel"]
+exclude = ["**/*.scel", "**/*.xml", "tests/**"]
 
 [dependencies]
 thiserror = "2.0"
 
-[lints.rust]
-warnings = "deny"
-dead_code = "deny"
-
 [lints.clippy]
-unwrap_used = "deny"
 expect_used = "deny"
 module-inception = "allow"
+unwrap_used = "deny"
+
+[lints.rust]
+dead_code = "deny"
+warnings = "deny"
