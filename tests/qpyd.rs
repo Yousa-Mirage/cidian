@@ -1,6 +1,9 @@
 //! Integration tests against real QQ Pinyin category dictionary files.
 
-use cidian::{Dictionary, Entry, qpyd};
+mod support;
+
+use cidian::qpyd;
+use support::{assert_entry, parse_for_test, read_fixture};
 
 // These properties were independently cross-checked by decoding the zlib
 // stream and index records with Python's standard library. Do not regenerate
@@ -21,8 +24,8 @@ macro_rules! qpyd_golden_test {
         #[test]
         fn $test_name() {
             let file_name = $file_name;
-            let data = include_bytes!(concat!("fixtures/qpyd/", $file_name));
-            let dictionary = parse_for_test(file_name, data);
+            let data = read_fixture("qpyd", file_name);
+            let dictionary = parse_for_test(file_name, &data, qpyd::parse);
 
             assert_eq!(dictionary.entries.len(), $entries);
             assert_eq!(dictionary.metadata.name.as_deref(), Some($name));
@@ -83,24 +86,6 @@ macro_rules! qpyd_golden_test {
             );
         }
     };
-}
-
-#[track_caller]
-fn parse_for_test(file_name: &str, data: &[u8]) -> Dictionary {
-    match qpyd::parse(data) {
-        Ok(dictionary) => dictionary,
-        Err(error) => panic!("failed to parse {file_name}: {error}"),
-    }
-}
-
-#[track_caller]
-fn assert_entry(file_name: &str, index: usize, entry: &Entry, word: &str, code: &[&str]) {
-    assert_eq!(entry.word, word, "{file_name}: word at entry {index}");
-    assert_eq!(
-        entry.code.as_slice(),
-        code,
-        "{file_name}: code at entry {index}"
-    );
 }
 
 qpyd_golden_test!(

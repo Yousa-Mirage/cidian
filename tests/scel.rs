@@ -1,6 +1,9 @@
 //! Integration tests against real Sogou Cell Dictionary files.
 
-use cidian::{Dictionary, Entry, scel};
+mod support;
+
+use cidian::scel;
+use support::{assert_entry, parse_for_test, read_fixture};
 
 // These are golden properties of the exact fixture bytes checked into this
 // repository. They were cross-checked with an independent reference parser;
@@ -19,8 +22,8 @@ macro_rules! scel_golden_test {
         #[test]
         fn $test_name() {
             let file_name = $file_name;
-            let data = include_bytes!(concat!("fixtures/scel/", $file_name));
-            let dictionary = parse_for_test($file_name, data);
+            let data = read_fixture("scel", file_name);
+            let dictionary = parse_for_test(file_name, &data, scel::parse);
 
             assert_eq!(dictionary.entries.len(), $entries);
             assert_eq!(dictionary.metadata.name.as_deref(), Some($name));
@@ -61,24 +64,6 @@ macro_rules! scel_golden_test {
             );
         }
     };
-}
-
-#[track_caller]
-fn parse_for_test(file_name: &str, data: &[u8]) -> Dictionary {
-    match scel::parse(data) {
-        Ok(dictionary) => dictionary,
-        Err(error) => panic!("failed to parse {file_name}: {error}"),
-    }
-}
-
-#[track_caller]
-fn assert_entry(file_name: &str, index: usize, entry: &Entry, word: &str, code: &[&str]) {
-    assert_eq!(entry.word, word, "{file_name}: word at entry {index}");
-    assert_eq!(
-        entry.code.as_slice(),
-        code,
-        "{file_name}: code at entry {index}"
-    );
 }
 
 scel_golden_test!(
