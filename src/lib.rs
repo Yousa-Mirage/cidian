@@ -8,11 +8,13 @@
 #![deny(dead_code)]
 #![deny(missing_docs)]
 
+mod baidu;
 mod error;
 mod model;
 
 pub mod qpyd;
 pub mod scel;
 
+pub use baidu::{bcd, bdict};
 pub use error::{Error, Format, Result};
 pub use model::{Dictionary, Entry, Metadata};

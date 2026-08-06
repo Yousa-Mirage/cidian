@@ -9,6 +9,10 @@ use std::str::Utf8Error;
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 #[non_exhaustive]
 pub enum Format {
+    /// Baidu mobile category dictionary (`.bcd`).
+    Bcd,
+    /// Baidu desktop category dictionary (`.bdict`).
+    Bdict,
     /// QQ Pinyin category dictionary (`.qpyd`).
     Qpyd,
     /// Sogou Cell Dictionary (`.scel`).
@@ -18,6 +22,8 @@ pub enum Format {
 impl fmt::Display for Format {
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
+            Self::Bcd => formatter.write_str("BCD"),
+            Self::Bdict => formatter.write_str("BDICT"),
             Self::Qpyd => formatter.write_str("QPYD"),
             Self::Scel => formatter.write_str("SCEL"),
         }
@@ -127,6 +133,19 @@ pub enum Error {
         source: Utf8Error,
     },
 
+    /// A field declared as ASCII contained a non-ASCII byte.
+    #[error("invalid ASCII byte {byte:#04x} in {format} field `{field}` at byte {offset:#x}")]
+    InvalidAscii {
+        /// Dictionary format being parsed.
+        format: Format,
+        /// Name of the field being parsed.
+        field: &'static str,
+        /// Byte offset of the invalid value.
+        offset: usize,
+        /// Invalid byte value.
+        byte: u8,
+    },
+
     /// A compressed data section could not be decoded.
     #[error(
         "failed to decompress {format} data at byte {offset:#x}: zlib returned status {status}"
@@ -217,6 +236,32 @@ pub enum Error {
         index: u64,
         /// Byte offset of the reference.
         offset: usize,
+    },
+
+    /// A component of an encoded syllable was outside its lookup table.
+    #[error("invalid {field} index {index} in {format} data at byte {offset:#x}")]
+    InvalidCodeComponent {
+        /// Dictionary format being parsed.
+        format: Format,
+        /// Component lookup table, such as `initial` or `final`.
+        field: &'static str,
+        /// Invalid lookup-table index.
+        index: u64,
+        /// Byte offset of the invalid index.
+        offset: usize,
+    },
+
+    /// A record header did not match any supported layout.
+    #[error("invalid {format} {field} record header at byte {offset:#x}: found {found:02x?}")]
+    InvalidRecordHeader {
+        /// Dictionary format being parsed.
+        format: Format,
+        /// Kind of record whose header was invalid.
+        field: &'static str,
+        /// Byte offset of the record header.
+        offset: usize,
+        /// Header bytes found in the input.
+        found: Vec<u8>,
     },
 
     /// A parsed item count disagrees with its declared count.

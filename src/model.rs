@@ -29,15 +29,29 @@ pub struct Entry {
     pub word: String,
     /// Source coding components in source order.
     ///
-    /// For SCEL files these components are pinyin syllables or embedded Latin
-    /// code letters. For QPYD files they are the apostrophe-delimited pinyin
-    /// components stored with each entry. Other dictionary formats may use
-    /// another coding system in the same field.
+    /// The representation depends on the dictionary format:
+    ///
+    /// - **SCEL**: pinyin syllables, including embedded Latin code letters when
+    ///   the source uses them.
+    /// - **QPYD**: apostrophe-delimited pinyin components stored with the entry.
+    /// - **BDICT/BCD regular entries**: decoded pinyin syllables or embedded
+    ///   Latin code letters.
+    /// - **BDICT/BCD English and mixed entries**: the directly stored code as a
+    ///   single component.
+    /// - **Other formats**: another source-specific coding system may be used.
     pub code: Vec<String>,
     /// An optional source-defined numeric weight.
     ///
-    /// For SCEL files this is the first little-endian `u16` in the word
-    /// extension. Sogou does not document its precise semantics, so this field
-    /// intentionally does not promise that the value is a corpus frequency.
+    /// The representation depends on the dictionary format:
+    ///
+    /// - **SCEL**: the first little-endian `u16` in the word extension, when
+    ///   the extension contains at least two bytes.
+    /// - **BDICT/BCD**: the numeric field in regular, English, and weighted
+    ///   mixed records. Mixed records without a documented weight use `None`.
+    /// - **QPYD**: always `None`; its undocumented four-byte index field is not
+    ///   exposed as a weight.
+    ///
+    /// These formats do not document precise statistical semantics, so this
+    /// field does not promise a corpus frequency.
     pub weight: Option<u32>,
 }
