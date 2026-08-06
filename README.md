@@ -32,7 +32,8 @@ For data already in memory, use `cidian::scel::parse(&bytes)`.
 Every parser returns a [`Dictionary`](https://docs.rs/cidian/latest/cidian/struct.Dictionary.html)
 containing source metadata and a list of entries. An entry contains its word,
 structured coding components, and an optional source-defined numeric weight.
-For SCEL files, the coding components are pinyin syllables.
+For SCEL files, the coding components are pinyin syllables or embedded Latin
+code letters.
 
 For SCEL files, the weight comes from the first little-endian 16-bit value in
 the word extension. Sogou does not publish the exact meaning of this value, so
@@ -65,7 +66,8 @@ The parser:
 - supports DCS and ECS headers;
 - follows the declared pinyin, word-group, and total-word counts;
 - computes the word-table offset from the variable-length pinyin table;
-- resolves pinyin through the identifiers stored in the file;
+- resolves pinyin through the identifiers stored in the file and supports the
+  implicit English alphabet encoded after the pinyin table;
 - reads each word extension using its declared byte length;
 - validates bounds, UTF-16LE, pinyin references, and the final word count;
 - stops after the declared main word table, leaving optional trailing sections
@@ -78,8 +80,9 @@ normalized.
 
 The unit tests construct small SCEL byte sequences in memory to exercise
 individual parser branches. The integration tests additionally parse real
-samples from `tests/fixtures/<format>/`. Test fixtures are excluded from
-published Cargo packages.
+samples from `tests/fixtures/<format>/` and check golden properties such as
+entry counts, metadata, boundary entries, and representative entries. Test
+fixtures are excluded from published Cargo packages.
 
 Run the full local test suite with:
 
