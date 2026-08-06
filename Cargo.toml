@@ -13,7 +13,14 @@ license = "MIT"
 keywords = ["baidu", "chinese", "dictionary", "qpyd", "scel"]
 categories = ["parser-implementations", "text-processing"]
 
-exclude = ["**/*.xml", "benches/**", "tests/**"]
+exclude = [
+  "**/*.xml",
+  ".github/**",
+  ".gitignore",
+  "benches/**",
+  "justfile",
+  "tests/**"
+]
 
 [[bench]]
 harness = false
