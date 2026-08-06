@@ -5,6 +5,7 @@ on:
     paths:
       - "src/**"
       - "tests/**"
+      - "benches/**"
       - "Cargo.toml"
       - "Cargo.lock"
       - ".github/workflows/**"
@@ -31,7 +32,7 @@ jobs:
         uses: Swatinem/rust-cache@v2
 
       - name: Run unit and integration tests
-        run: cargo test --all-targets --all-features
+        run: cargo test --lib --tests --all-features
 
       - name: Run documentation tests
         run: cargo test --doc --all-features

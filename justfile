@@ -17,9 +17,13 @@ lint:
 
 # Run unit, integration, and documentation tests.
 test:
-    @cargo test --all-targets --all-features
+    @cargo test --lib --tests --all-features
     @cargo test --doc --all-features
     @echo "🎉 All tests passed!"
+
+# Run the parser benchmark against the largest real fixture for each format.
+bench:
+    @cargo bench --bench parse
 
 # Generate API documentation. Pass `open` to open the generated index page.
 document open="":

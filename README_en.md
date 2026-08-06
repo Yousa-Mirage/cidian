@@ -81,6 +81,18 @@ match cidian::scel::parse(&[]) {
 
 Filesystem errors are reported as `Error::Io` and carry the path.
 
+## Benchmark
+
+For each of the four parser families, the largest real fixture in the current test set is parsed 10
+times. The results are as follows:
+
+  | Format      | Fixture             | File size (KB) | Entries | Minimum  | Average  |
+  | ----------- | ------------------- | -------------: | ------: | -------: | -------: |
+  | SCEL        | `医学词汇大全.scel` |       3,659.37 |  90,047 | 21.20 ms | 22.20 ms |
+  | QCEL        | `成语俗语大全.qcel` |       2,219.51 |  66,418 | 10.10 ms | 10.85 ms |
+  | QPYD        | `唐诗.qpyd`         |       2,885.19 | 161,674 | 58.27 ms | 61.13 ms |
+  | Baidu BDICT | `诗词精选.bdict`    |       2,752.89 | 100,264 | 20.08 ms | 21.50 ms |
+
 ## Acknowledgments
 
 - Thanks to nopdan for the [input-method dictionary format series](https://nopdan.com/series/lexicon/)

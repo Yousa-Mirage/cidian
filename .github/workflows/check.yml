@@ -5,6 +5,7 @@ on:
     paths:
       - "src/**"
       - "tests/**"
+      - "benches/**"
       - "Cargo.toml"
       - "Cargo.lock"
       - ".github/workflows/**"

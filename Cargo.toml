@@ -13,7 +13,11 @@ license = "MIT"
 keywords = ["baidu", "chinese", "dictionary", "qpyd", "scel"]
 categories = ["parser-implementations", "text-processing"]
 
-exclude = ["**/*.xml", "tests/**"]
+exclude = ["**/*.xml", "benches/**", "tests/**"]
+
+[[bench]]
+harness = false
+name = "parse"
 
 [dependencies]
 thiserror = "2.0"
