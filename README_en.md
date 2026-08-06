@@ -1,10 +1,10 @@
 # cidian
 
-`cidian` parses Chinese input-method dictionary files into one small, common Rust data model. It supports
-Sogou Cell Dictionary (`.scel`), QQ Pinyin Cell Dictionary (`.qcel`), QQ Pinyin category dictionary
-(`.qpyd`), and Baidu desktop (`.bdict`) and mobile (`.bcd`) category dictionaries.
+`cidian` parses Chinese input-method dictionary files into a small, common Rust data model. It supports
+Sogou (`.scel`), QQ Pinyin (`.qcel`, `.qpyd`), and Baidu (`.bdict`, `.bcd`) dictionaries.
 
-The crate is concerned only with parsing: it does not normalize, sort, deduplicate, or export entries.
+`cidian` is concerned only with parsing: it does not normalize, sort, deduplicate, or export entries.
+Truncated or corrupted input fails with a structured error instead of being silently repaired.
 
 ## Supported formats
 
@@ -53,17 +53,14 @@ type:
 
 - **`metadata`** --- a [`Metadata`](https://docs.rs/cidian/latest/cidian/struct.Metadata.html) with the
   common fields `name`, `category`, and `description` (each `Option<String>`), plus `extra`, a map of
-  source-specific strings that have no common field.
+  source-specific metadata.
 - **`entries`** --- entries in source order. Each
   [`Entry`](https://docs.rs/cidian/latest/cidian/struct.Entry.html) has:
   - `word` --- the word or phrase, exactly as stored by the source.
-  - `code` --- the coding components in source order, split the way the format stores them: pinyin
-    syllables or Latin codes for SCEL and QCEL, apostrophe-delimited pinyin for QPYD, and pinyin
-    syllables or the stored code as a single component for Baidu entries.
-  - `weight` --- an optional numeric weight defined by the source. QCEL word extensions must contain
-    at least four bytes; the parser reads the value from those first four bytes and rejects shorter
-    extensions. Vendors do not publish precise statistical semantics, so treat it as a source-defined
-    value rather than a corpus frequency. QPYD entries always have `weight: None`.
+  - `code` --- the coding components in source order: pinyin syllables or Latin codes for SCEL/QCEL,
+    apostrophe-delimited pinyin for QPYD, and pinyin syllables or the stored code as a single component
+    for Baidu entries.
+  - `weight` --- an optional source-defined numeric weight (`None` for QPYD).
 
 ## Errors
 
@@ -83,15 +80,6 @@ match cidian::scel::parse(&[]) {
 ```
 
 Filesystem errors are reported as `Error::Io` and carry the path.
-
-## Behavior
-
-- Entries stay in source order; text is not normalized.
-- Parsing is strict: truncated or corrupted input fails with a structured error instead of being silently
-  repaired.
-- QCEL uses QQ Pinyin's built-in code table when the source table is empty and ignores optional trailing
-  sections such as `DELTBL` after the declared main word groups.
-- The crate does not convert, merge, or export dictionaries.
 
 ## Acknowledgments
 

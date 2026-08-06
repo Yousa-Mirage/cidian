@@ -1,10 +1,9 @@
 # cidian
 
-`cidian` 将中文输入法词库文件解析为统一、轻量的 Rust 数据模型。目前支持搜狗细胞词库（`.scel`）、QQ
-拼音细胞词库（`.qcel`）、QQ
-拼音分类词库（`.qpyd`）、百度桌面分类词库（`.bdict`）和百度手机分类词库（`.bcd`）。
+`cidian` 将中文输入法词库文件解析为统一、轻量的 Rust 数据模型，目前支持搜狗（`.scel`）、 QQ
+拼音（`.qcel`、`.qpyd`）与百度（`.bdict`、`.bcd`）词库。
 
-本 crate 只负责解析，不进行规范化、排序、去重或导出。
+`cidian` 只负责解析，不进行规范化、排序、去重或导出。截断或损坏的输入返回结构化错误，而非静默修复。
 
 ## 支持的格式
 
@@ -51,14 +50,14 @@ let dictionary = cidian::qpyd::parse(&bytes)?;
 所有解析器返回统一的 [`Dictionary`](https://docs.rs/cidian/latest/cidian/struct.Dictionary.html) 类型：
 
 - **`metadata`** --- [`Metadata`](https://docs.rs/cidian/latest/cidian/struct.Metadata.html)
-  结构，包含公共字段 `name`、`category`、`description`（均为 `Option<String>`），以及
-  `extra`------一个存放格式特有信息的字符串映射，用于容纳没有公共字段的元数据。
+  结构：公共字段 `name`、`category`、`description`（均为 `Option<String>`），以及 `extra`
+  映射（存放格式特有的额外元数据）。
 - **`entries`** --- 按源文件顺序排列的词条。每个
   [`Entry`](https://docs.rs/cidian/latest/cidian/struct.Entry.html) 包含：
   - `word` --- 词或短语，与源文件存储的完全一致。
-  - `code` --- 按源格式拆分后的编码组件：SCEL 和 QCEL 为拼音音节或拉丁编码，QPYD
-    为按撇号分隔的拼音，百度词条为拼音音节或整体存储的编码（单个组件）。
-  - `weight` --- 源定义的可选数值权重。QCEL 词条的扩展信息至少包含四个字节，解析器从前四个字节读取该值；扩展信息过短会被视为格式错误。厂商未公开其精确的统计含义，请将其视为源定义值而非语料频率。QPYD 词条的 `weight` 恒为 `None`。
+  - `code` --- 按源格式拆分的编码组件：SCEL/QCEL 为拼音音节或拉丁编码，QPYD
+    为按撇号分隔的拼音，百度词条为拼音音节或整体编码。
+  - `weight` --- 源定义的可选数值权重；QPYD 恒为 `None`。
 
 ## 错误处理
 
@@ -78,17 +77,11 @@ match cidian::scel::parse(&[]) {
 
 文件读取失败会以 `Error::Io` 返回，并携带路径信息。
 
-## 行为约定
-
-- 词条保持源文件顺序，文本不做任何规范化处理。
-- 解析是严格的：截断或损坏的输入会返回结构化错误，而不是被静默修复。
-- QCEL 在文件未携带拼音表时使用 QQ 拼音内置编码表，并在主词表结束后忽略 `DELTBL` 等可选尾部区域。
-- 本 crate 不做格式转换、合并或导出。
-
 ## 致谢
 
 - 感谢 nopdan 大佬的[输入法词库解析系列文章](https://nopdan.com/series/lexicon/)以及
-  [nopdan/rose](https://github.com/nopdan/rose) 蔷薇词库转换库为本 crate 提供了参考。
+  [nopdan/rose](https://github.com/nopdan/rose)
+  蔷薇词库转换库，开发过程中大量参考了大佬的博客文章和代码实现。
 - 感谢 qinwf/cidian 项目为本 crate 提供了开发动机。
 
 ## 许可证
