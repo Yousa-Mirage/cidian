@@ -11,6 +11,7 @@
 mod baidu;
 mod error;
 mod model;
+mod utils;
 
 pub mod qcel;
 pub mod qpyd;

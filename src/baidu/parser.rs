@@ -1,8 +1,8 @@
 use std::collections::BTreeMap;
-use std::fs;
 use std::ops::Range;
 use std::path::Path;
 
+use crate::utils::{Reader, decode_fixed_utf16, read_file, read_u32_at, slice_at, validate_count};
 use crate::{Dictionary, Entry, Error, Format, Metadata, Result};
 
 const MAGIC: &[u8; 8] = b"biptbdsw";
@@ -79,12 +79,7 @@ pub(crate) fn parse(data: &[u8], variant: BaiduVariant) -> Result<Dictionary> {
 }
 
 pub(crate) fn parse_file(path: impl AsRef<Path>, variant: BaiduVariant) -> Result<Dictionary> {
-    let path = path.as_ref();
-    let data = fs::read(path).map_err(|source| Error::Io {
-        format: variant.format(),
-        path: path.to_owned(),
-        source,
-    })?;
+    let data = read_file(path, variant.format())?;
     parse(&data, variant)
 }
 
@@ -148,10 +143,11 @@ fn parse_header(data: &[u8], variant: BaiduVariant) -> Result<Header> {
 }
 
 fn parse_metadata(data: &[u8], format: Format) -> Result<Metadata> {
-    let name = parse_fixed_utf16(data, NAME_RANGE, "dictionary name", format)?;
-    let author = parse_fixed_utf16(data, AUTHOR_RANGE, "dictionary author", format)?;
-    let example = parse_fixed_utf16(data, EXAMPLE_RANGE, "dictionary example", format)?;
-    let description = parse_fixed_utf16(data, DESCRIPTION_RANGE, "dictionary description", format)?;
+    let name = decode_fixed_utf16(data, NAME_RANGE, "dictionary name", format)?;
+    let author = decode_fixed_utf16(data, AUTHOR_RANGE, "dictionary author", format)?;
+    let example = decode_fixed_utf16(data, EXAMPLE_RANGE, "dictionary example", format)?;
+    let description =
+        decode_fixed_utf16(data, DESCRIPTION_RANGE, "dictionary description", format)?;
 
     let mut extra = BTreeMap::new();
     if let Some(author) = author {
@@ -178,13 +174,13 @@ fn section_reader<'data>(
 ) -> Result<Reader<'data>> {
     validate_count(
         field,
-        section.count,
+        section.count as u64,
         section.size / minimum_record_len,
         format,
     )?;
 
     if section.size == 0 {
-        return Ok(Reader::new(&[], section.offset, format));
+        return Ok(Reader::section(&[], section.offset, format));
     }
 
     if section.offset < HEADER_LEN || section.offset > data.len() {
@@ -198,7 +194,7 @@ fn section_reader<'data>(
     }
 
     let bytes = slice_at(data, section.offset, section.size, format)?;
-    Ok(Reader::new(bytes, section.offset, format))
+    Ok(Reader::section(bytes, section.offset, format))
 }
 
 fn parse_regular_entries(
@@ -220,7 +216,7 @@ fn parse_regular_entries(
         let weight = reader.read_u16()?;
         validate_count(
             "regular entry code units",
-            code_len,
+            code_len as u64,
             reader.remaining() / 4,
             format,
         )?;
@@ -349,7 +345,7 @@ fn parse_mixed_entries(
         let units = code_len + word_len;
         validate_count(
             "mixed entry UTF-16 units",
-            units,
+            units as u64,
             reader.remaining() / 2,
             format,
         )?;
@@ -364,164 +360,4 @@ fn parse_mixed_entries(
     }
 
     reader.finish("mixed entries")
-}
-
-fn parse_fixed_utf16(
-    data: &[u8],
-    range: Range<usize>,
-    field: &'static str,
-    format: Format,
-) -> Result<Option<String>> {
-    let offset = range.start;
-    let bytes = slice_at(data, offset, range.len(), format)?;
-    let used_len = bytes
-        .chunks_exact(2)
-        .position(|pair| pair == [0, 0])
-        .map_or(bytes.len(), |index| index * 2);
-
-    if used_len == 0 {
-        return Ok(None);
-    }
-
-    decode_utf16(&bytes[..used_len], offset, field, format).map(Some)
-}
-
-fn decode_utf16(
-    bytes: &[u8],
-    offset: usize,
-    field: &'static str,
-    format: Format,
-) -> Result<String> {
-    std::char::decode_utf16(
-        bytes
-            .chunks_exact(2)
-            .map(|pair| u16::from_le_bytes([pair[0], pair[1]])),
-    )
-    .collect::<std::result::Result<String, _>>()
-    .map_err(|source| Error::InvalidUtf16 {
-        format,
-        field,
-        offset,
-        source,
-    })
-}
-
-fn validate_count(field: &'static str, count: usize, maximum: usize, format: Format) -> Result<()> {
-    if count <= maximum {
-        Ok(())
-    } else {
-        Err(Error::InvalidCount {
-            format,
-            field,
-            count: count as u64,
-            maximum: maximum as u64,
-        })
-    }
-}
-
-fn read_u32_at(data: &[u8], offset: usize, format: Format) -> Result<u32> {
-    let bytes = slice_at(data, offset, 4, format)?;
-    Ok(u32::from_le_bytes([bytes[0], bytes[1], bytes[2], bytes[3]]))
-}
-
-fn slice_at(data: &[u8], offset: usize, length: usize, format: Format) -> Result<&[u8]> {
-    let available = data.len().saturating_sub(offset);
-    let end = offset
-        .checked_add(length)
-        .filter(|&end| end <= data.len())
-        .ok_or(Error::UnexpectedEof {
-            format,
-            offset,
-            needed: length,
-            available,
-        })?;
-
-    Ok(&data[offset..end])
-}
-
-struct Reader<'data> {
-    data: &'data [u8],
-    base: usize,
-    position: usize,
-    format: Format,
-}
-
-impl<'data> Reader<'data> {
-    fn new(data: &'data [u8], base: usize, format: Format) -> Self {
-        Self {
-            data,
-            base,
-            position: 0,
-            format,
-        }
-    }
-
-    fn position(&self) -> usize {
-        self.base + self.position
-    }
-
-    fn finish(self, field: &'static str) -> Result<()> {
-        if self.position == self.data.len() {
-            Ok(())
-        } else {
-            Err(Error::SizeMismatch {
-                format: self.format,
-                field,
-                expected: self.data.len() as u64,
-                actual: self.position as u64,
-            })
-        }
-    }
-
-    fn remaining(&self) -> usize {
-        self.data.len() - self.position
-    }
-
-    fn read_u16(&mut self) -> Result<u16> {
-        let bytes = self.read_bytes(2)?;
-        Ok(u16::from_le_bytes([bytes[0], bytes[1]]))
-    }
-
-    fn read_utf16(&mut self, length: usize, field: &'static str) -> Result<String> {
-        let offset = self.position();
-        let bytes = self.read_bytes(length)?;
-        decode_utf16(bytes, offset, field, self.format)
-    }
-
-    fn read_ascii(&mut self, length: usize, field: &'static str) -> Result<String> {
-        let offset = self.position();
-        let bytes = self.read_bytes(length)?;
-        let mut text = String::with_capacity(length);
-
-        for (index, &byte) in bytes.iter().enumerate() {
-            if !byte.is_ascii() {
-                return Err(Error::InvalidAscii {
-                    format: self.format,
-                    field,
-                    offset: offset + index,
-                    byte,
-                });
-            }
-            text.push(char::from(byte));
-        }
-
-        Ok(text)
-    }
-
-    fn read_bytes(&mut self, length: usize) -> Result<&'data [u8]> {
-        let available = self.remaining();
-        let end = self
-            .position
-            .checked_add(length)
-            .filter(|&end| end <= self.data.len())
-            .ok_or(Error::UnexpectedEof {
-                format: self.format,
-                offset: self.position(),
-                needed: length,
-                available,
-            })?;
-        let bytes = &self.data[self.position..end];
-        self.position = end;
-        Ok(bytes)
-    }
 }
