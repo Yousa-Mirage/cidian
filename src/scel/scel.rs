@@ -1,4 +1,4 @@
-use std::collections::{BTreeMap, HashMap};
+use std::collections::BTreeMap;
 use std::fs;
 use std::path::Path;
 
@@ -12,8 +12,12 @@ const CATEGORY_RANGE: std::ops::Range<usize> = 0x338..0x540;
 const DESCRIPTION_RANGE: std::ops::Range<usize> = 0x540..0x0d40;
 const EXAMPLE_RANGE: std::ops::Range<usize> = 0x0d40..0x1540;
 const PINYIN_COUNT_OFFSET: usize = 0x1540;
+const PINYIN_HEADER_LEN: usize = 4;
 const PINYIN_TABLE_OFFSET: usize = 0x1544;
+const ENGLISH_CODE_COUNT: u16 = 26;
 const FORMAT: Format = Format::Scel;
+
+type CodeTable = Vec<Option<String>>;
 
 /// Parses a SCEL dictionary from memory.
 ///
@@ -38,11 +42,17 @@ pub fn parse(data: &[u8]) -> Result<Dictionary> {
 
     let record_count = read_u32_at(data, RECORD_COUNT_OFFSET)?;
     let total_words = read_u32_at(data, TOTAL_WORDS_OFFSET)?;
-    let pinyin_count = read_u32_at(data, PINYIN_COUNT_OFFSET)?;
+    let pinyin_count = read_pinyin_count(data)?;
 
     let mut reader = Reader::new(data, PINYIN_TABLE_OFFSET);
-    let pinyin = parse_pinyin_table(&mut reader, pinyin_count)?;
-    let entries = parse_word_table(&mut reader, record_count, total_words, &pinyin)?;
+    let code_table = parse_pinyin_table(&mut reader, pinyin_count)?;
+    let entries = parse_word_table(
+        &mut reader,
+        record_count,
+        total_words,
+        pinyin_count,
+        &code_table,
+    )?;
 
     // SCEL files may contain trailing sections such as DELTBL. The main table
     // is complete once record_count groups have been read, so trailing bytes
@@ -129,17 +139,27 @@ fn parse_metadata(data: &[u8]) -> Result<Metadata> {
 
 /// Parses the variable-length pinyin table and indexes entries by their
 /// stored SCEL identifier. The identifiers are not assumed to be contiguous.
-fn parse_pinyin_table(reader: &mut Reader<'_>, pinyin_count: u32) -> Result<HashMap<u16, String>> {
+fn parse_pinyin_table(reader: &mut Reader<'_>, pinyin_count: u16) -> Result<CodeTable> {
     // Every pinyin record needs at least an index and a byte length.
-    validate_count("pinyin table", pinyin_count, reader.remaining() / 4)?;
+    validate_count(
+        "pinyin table",
+        u32::from(pinyin_count),
+        reader.remaining() / 4,
+    )?;
 
-    let mut pinyin = HashMap::with_capacity(pinyin_count as usize);
+    let mut code_table = vec![None; usize::from(pinyin_count)];
+
     for _ in 0..pinyin_count {
         let index = reader.read_u16()?;
         let byte_len = reader.read_u16()? as usize;
         let text = reader.read_utf16(byte_len, "pinyin table entry")?;
+        let table_index = usize::from(index);
 
-        if pinyin.insert(index, text).is_some() {
+        if table_index >= code_table.len() {
+            code_table.resize_with(table_index + 1, || None);
+        }
+
+        if code_table[table_index].replace(text).is_some() {
             return Err(Error::DuplicateCodeIndex {
                 format: FORMAT,
                 index: u64::from(index),
@@ -147,7 +167,7 @@ fn parse_pinyin_table(reader: &mut Reader<'_>, pinyin_count: u32) -> Result<Hash
         }
     }
 
-    Ok(pinyin)
+    Ok(code_table)
 }
 
 /// Parses the main SCEL word table into the common [`Entry`] model.
@@ -159,7 +179,8 @@ fn parse_word_table(
     reader: &mut Reader<'_>,
     record_count: u32,
     total_words: u32,
-    pinyin: &HashMap<u16, String>,
+    pinyin_count: u16,
+    code_table: &CodeTable,
 ) -> Result<Vec<Entry>> {
     // Each group starts with word_count and pinyin_bytes_len.
     validate_count("word group", record_count, reader.remaining() / 4)?;
@@ -173,21 +194,21 @@ fn parse_word_table(
 
         let indices_offset = reader.position();
         let indices = reader.read_bytes(pinyin_byte_len)?;
-        let syllables = indices
+        let mut codes = indices
             .chunks_exact(2)
             .enumerate()
             .map(|(index_position, pair)| {
                 let index = u16::from_le_bytes([pair[0], pair[1]]);
-
-                pinyin.get(&index).cloned().ok_or(Error::InvalidCodeIndex {
-                    format: FORMAT,
-                    index: u64::from(index),
-                    offset: indices_offset + index_position * 2,
-                })
+                resolve_code_index(
+                    code_table,
+                    pinyin_count,
+                    index,
+                    indices_offset + index_position * 2,
+                )
             })
             .collect::<Result<Vec<_>>>()?;
 
-        for _ in 0..word_count {
+        for word_index in 0..word_count {
             let word_byte_len = reader.read_u16()? as usize;
             let word = reader.read_utf16(word_byte_len, "dictionary word")?;
 
@@ -198,12 +219,15 @@ fn parse_word_table(
             let weight = extension
                 .get(..2)
                 .map(|bytes| u16::from_le_bytes([bytes[0], bytes[1]]) as u32);
+            // All words in a group share the same code. Move it into the last
+            // word instead of cloning data that would immediately be dropped.
+            let code = if word_index + 1 == word_count {
+                std::mem::take(&mut codes)
+            } else {
+                codes.clone()
+            };
 
-            entries.push(Entry {
-                word,
-                code: syllables.clone(),
-                weight,
-            });
+            entries.push(Entry { word, code, weight });
         }
     }
 
@@ -217,6 +241,38 @@ fn parse_word_table(
     }
 
     Ok(entries)
+}
+
+/// Resolves a word-table code index through the pinyin table or SCEL's
+/// implicit lowercase English alphabet that immediately follows it.
+fn resolve_code_index(
+    code_table: &CodeTable,
+    pinyin_count: u16,
+    index: u16,
+    offset: usize,
+) -> Result<String> {
+    if let Some(code) = code_table.get(usize::from(index)).and_then(Option::as_ref) {
+        return Ok(code.clone());
+    }
+
+    // Some SCEL dictionaries omit Latin letters from the pinyin table and
+    // encode a-z as the 26 indices immediately following the table count.
+    // This follows SCEL's standard layout, where the declared count is also
+    // the base index of the implicit alphabet. Explicit table entries still
+    // take precedence so their stored identifiers are preserved.
+    if pinyin_count != 0 {
+        if let Some(english_offset) = index.checked_sub(pinyin_count) {
+            if english_offset < ENGLISH_CODE_COUNT {
+                return Ok(char::from(b'a' + english_offset as u8).to_string());
+            }
+        }
+    }
+
+    Err(Error::InvalidCodeIndex {
+        format: FORMAT,
+        index: u64::from(index),
+        offset,
+    })
 }
 
 /// Decodes a fixed-width, NUL-terminated UTF-16LE metadata field.
@@ -299,6 +355,16 @@ fn validate_count(field: &'static str, count: u32, maximum: usize) -> Result<()>
 fn read_u32_at(data: &[u8], offset: usize) -> Result<u32> {
     let bytes = slice_at(data, offset, 4)?;
     Ok(u32::from_le_bytes([bytes[0], bytes[1], bytes[2], bytes[3]]))
+}
+
+/// Reads the pinyin-table count while validating its complete header.
+///
+/// The four-byte area at `0x1540` contains a little-endian `u16` count followed
+/// by an undocumented `u16`. Only the count controls parsing, but validating
+/// the complete area guarantees that the table reader can start at `0x1544`.
+fn read_pinyin_count(data: &[u8]) -> Result<u16> {
+    let bytes = slice_at(data, PINYIN_COUNT_OFFSET, PINYIN_HEADER_LEN)?;
+    Ok(u16::from_le_bytes([bytes[0], bytes[1]]))
 }
 
 /// Returns a bounded slice or a structured end-of-input error.

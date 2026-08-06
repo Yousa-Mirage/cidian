@@ -79,12 +79,54 @@ mod tests {
     }
 
     #[test]
+    fn ignores_unknown_pinyin_count_field() {
+        let mut data = fixture(&[]);
+        set_u16(&mut data, PINYIN_COUNT_OFFSET + 2, 1);
+
+        let dictionary = must_parse(&data);
+
+        assert_eq!(dictionary.entries.len(), 1);
+        assert_eq!(dictionary.entries[0].code, ["ci"]);
+    }
+
+    #[test]
     fn uses_stored_pinyin_index() {
         let data = fixture(&[]);
         let dictionary = must_parse(&data);
 
         assert_eq!(dictionary.entries[0].word, "词");
         assert_eq!(dictionary.entries[0].code, ["ci"]);
+    }
+
+    #[test]
+    fn resolves_implicit_english_code_indices() {
+        let data = fixture_with_pinyin(&[(0, "ci")], &[1, 2, 26], &[]);
+        let dictionary = must_parse(&data);
+
+        assert_eq!(dictionary.entries[0].code, ["a", "b", "z"]);
+    }
+
+    #[test]
+    fn prefers_stored_code_over_implicit_english_index() {
+        let data = fixture_with_pinyin(&[(0, "ci"), (2, "A")], &[2], &[]);
+        let dictionary = must_parse(&data);
+
+        assert_eq!(dictionary.entries[0].code, ["A"]);
+    }
+
+    #[test]
+    fn rejects_code_index_after_implicit_english_alphabet() {
+        let data = fixture_with_pinyin(&[(0, "ci")], &[27], &[]);
+        let error = must_fail(&data);
+
+        assert!(matches!(
+            error,
+            Error::InvalidCodeIndex {
+                format: Format::Scel,
+                index: 27,
+                ..
+            }
+        ));
     }
 
     #[test]
@@ -158,7 +200,7 @@ mod tests {
 
     #[test]
     fn rejects_duplicate_pinyin_index() {
-        let data = fixture_with_pinyin(&[(42, "ci"), (42, "qi")], 42, &[]);
+        let data = fixture_with_pinyin(&[(42, "ci"), (42, "qi")], &[42], &[]);
         let error = must_fail(&data);
 
         assert!(matches!(
@@ -222,7 +264,7 @@ mod tests {
                 count,
                 maximum,
             } => {
-                assert_eq!(count, u64::from(u32::MAX));
+                assert_eq!(count, u64::from(u16::MAX));
                 assert!(maximum < count);
             }
             other => panic!("unexpected error: {other}"),
@@ -340,6 +382,40 @@ mod tests {
     }
 
     #[test]
+    fn reports_pinyin_header_missing_unknown_field() {
+        let mut data = fixture(&[]);
+        data.truncate(PINYIN_COUNT_OFFSET + 2);
+
+        let error = must_fail(&data);
+        assert!(matches!(
+            error,
+            Error::UnexpectedEof {
+                format: Format::Scel,
+                offset: PINYIN_COUNT_OFFSET,
+                needed: 4,
+                available: 2,
+            }
+        ));
+    }
+
+    #[test]
+    fn reports_truncated_pinyin_header_unknown_field() {
+        let mut data = fixture(&[]);
+        data.truncate(PINYIN_COUNT_OFFSET + 3);
+
+        let error = must_fail(&data);
+        assert!(matches!(
+            error,
+            Error::UnexpectedEof {
+                format: Format::Scel,
+                offset: PINYIN_COUNT_OFFSET,
+                needed: 4,
+                available: 3,
+            }
+        ));
+    }
+
+    #[test]
     fn reports_truncated_pinyin_entry() {
         let mut data = fixture(&[]);
         data.truncate(PINYIN_TABLE_OFFSET + 5);
@@ -452,12 +528,12 @@ mod tests {
     }
 
     fn fixture(extension: &[u8]) -> Vec<u8> {
-        fixture_with_pinyin(&[(42, "ci")], 42, extension)
+        fixture_with_pinyin(&[(42, "ci")], &[42], extension)
     }
 
     fn fixture_with_pinyin(
         pinyin_entries: &[(u16, &str)],
-        referenced_index: u16,
+        referenced_indices: &[u16],
         extension: &[u8],
     ) -> Vec<u8> {
         let mut data = vec![0; PINYIN_TABLE_OFFSET];
@@ -466,7 +542,7 @@ mod tests {
         data[7..12].copy_from_slice(&[1, 1, 0, 0, 0]);
         set_u32(&mut data, RECORD_COUNT_OFFSET, 1);
         set_u32(&mut data, TOTAL_WORDS_OFFSET, 1);
-        set_u32(&mut data, PINYIN_COUNT_OFFSET, pinyin_entries.len() as u32);
+        set_u16(&mut data, PINYIN_COUNT_OFFSET, pinyin_entries.len() as u16);
         write_fixed_utf16(&mut data, NAME_RANGE.start, "测试词库");
 
         for &(index, text) in pinyin_entries {
@@ -475,8 +551,10 @@ mod tests {
         }
 
         push_u16(&mut data, 1);
-        push_u16(&mut data, 2);
-        push_u16(&mut data, referenced_index);
+        push_u16(&mut data, (referenced_indices.len() * 2) as u16);
+        for &index in referenced_indices {
+            push_u16(&mut data, index);
+        }
         push_utf16(&mut data, "词");
         push_u16(&mut data, extension.len() as u16);
         data.extend_from_slice(extension);

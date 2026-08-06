@@ -29,8 +29,9 @@ pub struct Entry {
     pub word: String,
     /// Source coding components in source order.
     ///
-    /// For SCEL files these components are pinyin syllables. Other dictionary
-    /// formats may use another coding system in the same field.
+    /// For SCEL files these components are pinyin syllables or embedded Latin
+    /// code letters. Other dictionary formats may use another coding system in
+    /// the same field.
     pub code: Vec<String>,
     /// An optional source-defined numeric weight.
     ///
