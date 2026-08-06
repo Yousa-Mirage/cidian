@@ -1,16 +1,16 @@
 # cidian / 词典
 
 <p align="center">
-  <a href="https://github.com/Yousa-Mirage/cidian/blob/main/README.md">中文</a> ·
-  <a href="https://github.com/Yousa-Mirage/cidian/blob/main/README_en.md">English</a>
-</p>
-
-<p align="center">
   <a href="https://github.com/Yousa-Mirage/cidian/stargazers"><img src="https://img.shields.io/github/stars/Yousa-Mirage/cidian?style=social" alt="GitHub Stars"></a>
   <a href="https://github.com/Yousa-Mirage/cidian/blob/main/LICENSE"><img src="https://img.shields.io/github/license/Yousa-Mirage/cidian?style=flat" alt="MIT license"></a>
   <a href="https://github.com/Yousa-Mirage/cidian/releases"><img src="https://img.shields.io/github/v/release/Yousa-Mirage/cidian?style=flat" alt="GitHub release"></a>
   <a href="https://crates.io/crates/cidian"><img src="https://img.shields.io/crates/v/cidian.svg?style=flat" alt="crates.io version"></a>
   <a href="https://docs.rs/cidian"><img src="https://img.shields.io/docsrs/cidian?style=flat" alt="docs.rs documentation"></a>
+</p>
+
+<p align="center">
+  <a href="https://github.com/Yousa-Mirage/cidian/blob/main/README.md">中文</a> ·
+  <a href="https://github.com/Yousa-Mirage/cidian/blob/main/README_en.md">English</a>
 </p>
 
 `cidian` 将中文输入法词库文件解析为统一、轻量的 Rust 数据模型，目前支持搜狗（`.scel`）、 QQ
