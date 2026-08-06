@@ -15,6 +15,8 @@ pub enum Format {
     Bdict,
     /// QQ Pinyin category dictionary (`.qpyd`).
     Qpyd,
+    /// QQ Pinyin Cell Dictionary (`.qcel`).
+    Qcel,
     /// Sogou Cell Dictionary (`.scel`).
     Scel,
 }
@@ -25,6 +27,7 @@ impl fmt::Display for Format {
             Self::Bcd => formatter.write_str("BCD"),
             Self::Bdict => formatter.write_str("BDICT"),
             Self::Qpyd => formatter.write_str("QPYD"),
+            Self::Qcel => formatter.write_str("QCEL"),
             Self::Scel => formatter.write_str("SCEL"),
         }
     }
@@ -262,6 +265,23 @@ pub enum Error {
         offset: usize,
         /// Header bytes found in the input.
         found: Vec<u8>,
+    },
+
+    /// A record field is shorter than the format requires.
+    #[error(
+        "invalid {field} length {length} in {format} data at byte {offset:#x}: at least {minimum} bytes are required"
+    )]
+    InvalidExtensionLength {
+        /// Dictionary format being parsed.
+        format: Format,
+        /// Name of the extension field.
+        field: &'static str,
+        /// Byte offset of the length field.
+        offset: usize,
+        /// Declared extension length.
+        length: usize,
+        /// Minimum length required by the format.
+        minimum: usize,
     },
 
     /// A parsed item count disagrees with its declared count.

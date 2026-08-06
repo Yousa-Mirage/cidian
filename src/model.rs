@@ -33,6 +33,8 @@ pub struct Entry {
     ///
     /// - **SCEL**: pinyin syllables, including embedded Latin code letters when
     ///   the source uses them.
+    /// - **QCEL**: pinyin syllables, explicit Latin codes, or codes resolved
+    ///   through QCEL's built-in table when the source omits its table.
     /// - **QPYD**: apostrophe-delimited pinyin components stored with the entry.
     /// - **BDICT/BCD regular entries**: decoded pinyin syllables or embedded
     ///   Latin code letters.
@@ -46,6 +48,8 @@ pub struct Entry {
     ///
     /// - **SCEL**: the first little-endian `u16` in the word extension, when
     ///   the extension contains at least two bytes.
+    /// - **QCEL**: the first little-endian `u32` in the word extension. QCEL
+    ///   records with an extension shorter than four bytes are malformed.
     /// - **BDICT/BCD**: the numeric field in regular, English, and weighted
     ///   mixed records. Mixed records without a documented weight use `None`.
     /// - **QPYD**: always `None`; its undocumented four-byte index field is not

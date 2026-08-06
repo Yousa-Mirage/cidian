@@ -1,142 +1,96 @@
 # cidian
 
-`cidian` parses Chinese input-method dictionary files into a small, common
-Rust data model. Version 0.1 supports Sogou Cell Dictionary (`.scel`), QQ
-Pinyin category dictionary (`.qpyd`), Baidu desktop category dictionary
-(`.bdict`), and Baidu mobile category dictionary (`.bcd`) files.
+`cidian` 将中文输入法词库文件解析为统一、轻量的 Rust 数据模型。目前支持搜狗细胞词库（`.scel`）、QQ
+拼音细胞词库（`.qcel`）、QQ
+拼音分类词库（`.qpyd`）、百度桌面分类词库（`.bdict`）和百度手机分类词库（`.bcd`）。
 
-The crate is intentionally concerned only with parsing. It does not normalize,
-sort, deduplicate, or export dictionary entries, and it does not provide
-bindings for other languages.
+本 crate 只负责解析，不进行规范化、排序、去重或导出。
 
-## Usage
+## 支持的格式
 
-```rust
-let dictionary = cidian::scel::parse_file("dictionary.scel")?;
+  | 格式             | 扩展名   | 模块            |
+  | ---------------- | -------- | --------------- |
+  | 搜狗细胞词库     | `.scel`  | `cidian::scel`  |
+  | QQ 拼音细胞词库  | `.qcel`  | `cidian::qcel`  |
+  | QQ 拼音分类词库  | `.qpyd`  | `cidian::qpyd`  |
+  | 百度桌面分类词库 | `.bdict` | `cidian::bdict` |
+  | 百度手机分类词库 | `.bcd`   | `cidian::bcd`   |
 
-println!("{:?}", dictionary.metadata.name);
-for entry in dictionary.entries {
-    println!(
-        "{}\t{}\t{:?}",
-        entry.word,
-        entry.code.join(" "),
-        entry.weight
-    );
-}
+## 快速开始
 
-# Ok::<(), cidian::Error>(())
+添加依赖：
+
+```toml
+[dependencies]
+cidian = "0.1"
 ```
 
-For data already in memory, use `cidian::scel::parse(&bytes)`. The other
-formats expose the same pair of functions under `cidian::qpyd`,
-`cidian::bdict`, and `cidian::bcd`.
+从文件解析词库：
 
-## Data model
+```rust
+use cidian::scel;
 
-Every parser returns a [`Dictionary`](https://docs.rs/cidian/latest/cidian/struct.Dictionary.html)
-containing source metadata and a list of entries. An entry contains its word,
-structured coding components, and an optional source-defined numeric weight.
-For SCEL files, the coding components are pinyin syllables or embedded Latin
-code letters. For QPYD files, the apostrophe-delimited pinyin stored with each
-entry is returned as separate coding components. Regular Baidu entries expose
-decoded pinyin or embedded Latin letters as components; directly stored
-English and mixed codes remain one component.
+let dictionary = scel::parse_file("dictionary.scel")?;
 
-For SCEL files, the weight comes from the first little-endian 16-bit value in
-the word extension. Most Baidu record layouts likewise contain a 16-bit numeric
-weight. The vendors do not publish precise statistical semantics for these
-values, so `cidian` does not describe them as corpus frequencies.
+for entry in dictionary.entries {
+    println!("{}\t{}\t{:?}", entry.word, entry.code.join(" "), entry.weight);
+}
+```
 
-## Errors
+如果数据已在内存中，直接传入字节：
 
-Every parser returns `cidian::Result<T>` with the unified, structured
-`cidian::Error` type. Errors retain their dictionary `Format` and relevant
-details such as the file path, byte offset, field name, code index, and
-expected/actual counts. Callers can therefore handle individual failures
-without inspecting error messages:
+```rust
+let dictionary = cidian::qpyd::parse(&bytes)?;
+```
+
+每个格式模块都暴露相同的两个函数：`parse(&[u8]) -> Result<Dictionary>` 和
+`parse_file(path) -> Result<Dictionary>`。
+
+## 数据模型
+
+所有解析器返回统一的 [`Dictionary`](https://docs.rs/cidian/latest/cidian/struct.Dictionary.html) 类型：
+
+- **`metadata`** --- [`Metadata`](https://docs.rs/cidian/latest/cidian/struct.Metadata.html)
+  结构，包含公共字段 `name`、`category`、`description`（均为 `Option<String>`），以及
+  `extra`------一个存放格式特有信息的字符串映射，用于容纳没有公共字段的元数据。
+- **`entries`** --- 按源文件顺序排列的词条。每个
+  [`Entry`](https://docs.rs/cidian/latest/cidian/struct.Entry.html) 包含：
+  - `word` --- 词或短语，与源文件存储的完全一致。
+  - `code` --- 按源格式拆分后的编码组件：SCEL 和 QCEL 为拼音音节或拉丁编码，QPYD
+    为按撇号分隔的拼音，百度词条为拼音音节或整体存储的编码（单个组件）。
+  - `weight` --- 源定义的可选数值权重。QCEL 词条的扩展信息至少包含四个字节，解析器从前四个字节读取该值；扩展信息过短会被视为格式错误。厂商未公开其精确的统计含义，请将其视为源定义值而非语料频率。QPYD 词条的 `weight` 恒为 `None`。
+
+## 错误处理
+
+所有解析器返回统一的 `cidian::Result<T>`，错误类型为结构化的
+[`cidian::Error`](https://docs.rs/cidian/latest/cidian/enum.Error.html)。错误携带词典的 `Format`
+及相关细节（如文件路径、字节偏移、字段名），因此无需解析错误消息即可区分失败原因：
 
 ```rust
 match cidian::scel::parse(&[]) {
-    Err(cidian::Error::UnexpectedEof {
-        format: cidian::Format::Scel,
-        offset,
-        ..
-    }) => println!("truncated SCEL data at {offset:#x}"),
+    Err(cidian::Error::UnexpectedEof { format, offset, .. }) => {
+        println!("{format} 数据在第 {offset:#x} 字节处被截断");
+    }
     Err(error) => println!("{error}"),
     Ok(_) => {}
 }
 ```
 
-## SCEL parsing behavior
+文件读取失败会以 `Error::Io` 返回，并携带路径信息。
 
-The parser:
+## 行为约定
 
-- supports DCS and ECS headers;
-- follows the declared pinyin, word-group, and total-word counts;
-- computes the word-table offset from the variable-length pinyin table;
-- resolves pinyin through the identifiers stored in the file and supports the
-  implicit English alphabet encoded after the pinyin table;
-- reads each word extension using its declared byte length;
-- validates bounds, UTF-16LE, pinyin references, and the final word count;
-- stops after the declared main word table, leaving optional trailing sections
-  uninterpreted.
+- 词条保持源文件顺序，文本不做任何规范化处理。
+- 解析是严格的：截断或损坏的输入会返回结构化错误，而不是被静默修复。
+- QCEL 在文件未携带拼音表时使用 QQ 拼音内置编码表，并在主词表结束后忽略 `DELTBL` 等可选尾部区域。
+- 本 crate 不做格式转换、合并或导出。
 
-Entries remain in source order and textual values are not cleaned or otherwise
-normalized.
+## 致谢
 
-## QPYD parsing behavior
+- 感谢 nopdan 大佬的[输入法词库解析系列文章](https://nopdan.com/series/lexicon/)以及
+  [nopdan/rose](https://github.com/nopdan/rose) 蔷薇词库转换库为本 crate 提供了参考。
+- 感谢 qinwf/cidian 项目为本 crate 提供了开发动机。
 
-The parser:
-
-- follows the declared metadata and compressed-section offsets and sizes;
-- decodes the information section as strict UTF-16LE;
-- validates and decompresses the zlib entry section;
-- follows the declared entry count and each payload offset;
-- decodes entry codes as strict UTF-8 and words as strict UTF-16LE;
-- splits apostrophe-delimited pinyin into structured coding components;
-- retains the header version, raw FILETIME (`filetime_raw`), first-level
-  category, examples, and unknown labelled metadata in `Metadata::extra`.
-
-QPYD's four-byte index field is undocumented and is not exposed as a weight.
-Consequently, QPYD entries have `weight: None`.
-
-## Baidu BDICT and BCD parsing behavior
-
-The BDICT and BCD public modules share a parser core while retaining distinct
-format identifiers and error context. The parser:
-
-- validates the common `biptbdsw` header and supported version;
-- follows BDICT's declared regular, English, and mixed section offsets, sizes,
-  and counts;
-- supports BCD's mobile layout, whose regular entries begin at `0x350` while
-  its section descriptors are zero;
-- decodes regular pinyin through the fixed 24-initial and 33-final lookup
-  tables, including embedded Latin characters;
-- parses ASCII English entries and both mixed-record headers found in real
-  dictionaries;
-- decodes metadata and Chinese text as strict UTF-16LE;
-- validates section bounds, record counts, code indices, and exact section
-  consumption;
-- retains the dictionary author and example under `Metadata::extra`.
-
-Entries are returned in regular, English, then mixed section order. Source
-records are not filtered: a small number of real BDICT mixed records declare an
-empty word, and these remain represented as empty `Entry::word` values.
-
-## Development and tests
-
-The unit tests construct small SCEL, QPYD, BDICT, and BCD byte sequences in
-memory to exercise individual parser branches. The integration tests
-additionally parse real samples from `tests/fixtures/<format>/` and check golden
-properties such as entry counts, metadata, boundary entries, and representative
-entries. Test fixtures are excluded from published Cargo packages.
-
-Run the full local test suite with:
-
-```text
-just test
-```
-
-## License
+## 许可证
 
 MIT License
