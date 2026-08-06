@@ -19,6 +19,7 @@ lint:
 test:
     @cargo test --lib --tests --all-features
     @cargo test --doc --all-features
+    @cargo package --all-features --allow-dirty --no-verify
     @echo "🎉 All tests passed!"
 
 # Run the parser benchmark against the largest real fixture for each format.
