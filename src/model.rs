@@ -30,8 +30,9 @@ pub struct Entry {
     /// Source coding components in source order.
     ///
     /// For SCEL files these components are pinyin syllables or embedded Latin
-    /// code letters. Other dictionary formats may use another coding system in
-    /// the same field.
+    /// code letters. For QPYD files they are the apostrophe-delimited pinyin
+    /// components stored with each entry. Other dictionary formats may use
+    /// another coding system in the same field.
     pub code: Vec<String>,
     /// An optional source-defined numeric weight.
     ///

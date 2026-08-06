@@ -11,6 +11,7 @@
 mod error;
 mod model;
 
+pub mod qpyd;
 pub mod scel;
 
 pub use error::{Error, Format, Result};

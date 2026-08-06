@@ -10,7 +10,7 @@ readme = "README.md"
 repository = "https://github.com/Yousa-Mirage/cidian"
 homepage = "https://github.com/Yousa-Mirage/cidian"
 
-keywords = ["chinese", "dictionary", "scel", "sogou"]
+keywords = ["chinese", "dictionary", "qpyd", "scel", "sogou"]
 categories = ["parser-implementations", "text-processing"]
 
 exclude = ["**/*.scel", "**/*.xml", "tests/**"]

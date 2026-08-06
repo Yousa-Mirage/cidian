@@ -1,12 +1,16 @@
 use std::char::DecodeUtf16Error;
+use std::collections::TryReserveError;
 use std::fmt;
 use std::io;
 use std::path::PathBuf;
+use std::str::Utf8Error;
 
 /// A dictionary format understood by `cidian`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 #[non_exhaustive]
 pub enum Format {
+    /// QQ Pinyin category dictionary (`.qpyd`).
+    Qpyd,
     /// Sogou Cell Dictionary (`.scel`).
     Scel,
 }
@@ -14,6 +18,7 @@ pub enum Format {
 impl fmt::Display for Format {
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
+            Self::Qpyd => formatter.write_str("QPYD"),
             Self::Scel => formatter.write_str("SCEL"),
         }
     }
@@ -106,6 +111,77 @@ pub enum Error {
         /// Underlying UTF-16 decoder error.
         #[source]
         source: DecodeUtf16Error,
+    },
+
+    /// A field contained invalid UTF-8.
+    #[error("invalid UTF-8 in {format} field `{field}` at byte {offset:#x}: {source}")]
+    InvalidUtf8 {
+        /// Dictionary format being parsed.
+        format: Format,
+        /// Name of the field being parsed.
+        field: &'static str,
+        /// Offset of the field contents.
+        offset: usize,
+        /// Underlying UTF-8 decoder error.
+        #[source]
+        source: Utf8Error,
+    },
+
+    /// A compressed data section could not be decoded.
+    #[error(
+        "failed to decompress {format} data at byte {offset:#x}: zlib returned status {status}"
+    )]
+    InvalidCompression {
+        /// Dictionary format being parsed.
+        format: Format,
+        /// Byte offset of the compressed section in the source file.
+        offset: usize,
+        /// Numeric zlib return status.
+        status: i32,
+    },
+
+    /// A declared byte offset was outside its valid section.
+    #[error(
+        "invalid {field} offset {offset:#x} in {format} data: expected {minimum:#x}..={maximum:#x}"
+    )]
+    InvalidOffset {
+        /// Dictionary format being parsed.
+        format: Format,
+        /// Name of the offset field.
+        field: &'static str,
+        /// Declared byte offset.
+        offset: usize,
+        /// Smallest valid byte offset.
+        minimum: usize,
+        /// Largest valid byte offset.
+        maximum: usize,
+    },
+
+    /// A decoded section size disagreed with the source declaration.
+    #[error("{field} size mismatch in {format} data: expected {expected}, decoded {actual}")]
+    SizeMismatch {
+        /// Dictionary format being parsed.
+        format: Format,
+        /// Name of the measured section.
+        field: &'static str,
+        /// Size declared by the source.
+        expected: u64,
+        /// Size produced while parsing.
+        actual: u64,
+    },
+
+    /// Memory for a declared section could not be reserved.
+    #[error("failed to reserve {requested} items for {field} while parsing {format}: {source}")]
+    AllocationFailed {
+        /// Dictionary format being parsed.
+        format: Format,
+        /// Name of the allocation target.
+        field: &'static str,
+        /// Number of items requested.
+        requested: usize,
+        /// Underlying allocation error.
+        #[source]
+        source: TryReserveError,
     },
 
     /// A declared count cannot fit in the remaining input.
