@@ -79,9 +79,12 @@ pub fn parse_file(path: impl AsRef<Path>) -> Result<Dictionary> {
     parse(&data)
 }
 
+/// Validates the fixed SCEL header before any format-specific offsets are read.
+///
+/// The header contains the SCEL magic, either the DCS or ECS variant marker,
+/// and a five-byte version marker. Unsupported values are reported with the
+/// corresponding structured error.
 fn validate_header(data: &[u8]) -> Result<()> {
-    // The first 12 bytes identify the SCEL container, its variant, and its
-    // version. Validate them before reading any offsets from the header.
     let header = slice_at(data, 0, HEADER_LEN, FORMAT)?;
 
     let magic = [header[0], header[1], header[2], header[3]];

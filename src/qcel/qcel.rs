@@ -20,6 +20,7 @@ const HASH_CODE_INDEX: u32 = 482;
 const QQ_VARIANT: [u8; 3] = [0xd2, 0x6d, 0x53];
 const FORMAT: Format = Format::Qcel;
 
+/// Lookup representation for the code identifiers used by QCEL word groups.
 enum CodeTable {
     Default,
     Explicit {
@@ -118,6 +119,10 @@ pub fn parse_file(path: impl AsRef<Path>) -> Result<Dictionary> {
     parse(&data)
 }
 
+/// Validates the fixed QCEL header before parsing its declared offsets.
+///
+/// QCEL accepts both the ordinary DCS marker and QQ Pinyin's own variant
+/// marker, while requiring the version marker supported by this parser.
 fn validate_header(data: &[u8]) -> Result<()> {
     let header = slice_at(data, 0, HEADER_LEN, FORMAT)?;
 
@@ -148,6 +153,10 @@ fn validate_header(data: &[u8]) -> Result<()> {
     Ok(())
 }
 
+/// Decodes QCEL's SCEL-compatible fixed-width metadata fields.
+///
+/// The common name, category, and description fields populate [`Metadata`]
+/// directly; the source example field is retained under `Metadata::extra`.
 fn parse_metadata(data: &[u8]) -> Result<Metadata> {
     let name = decode_fixed_utf16(data, NAME_RANGE, "dictionary name", FORMAT)?;
     let category = decode_fixed_utf16(data, CATEGORY_RANGE, "dictionary category", FORMAT)?;
@@ -168,6 +177,12 @@ fn parse_metadata(data: &[u8]) -> Result<Metadata> {
     })
 }
 
+/// Parses the optional explicit QCEL code table.
+///
+/// A zero count selects the static QQ code table without allocating copies of
+/// its strings. Otherwise each record supplies a stored identifier and a
+/// UTF-16LE code. The declared count is retained because identifiers after
+/// that range may represent QCEL's implicit lowercase English alphabet.
 fn parse_code_table(reader: &mut Reader<'_>, pinyin_count: u32) -> Result<CodeTable> {
     if pinyin_count == 0 {
         return Ok(CodeTable::Default);
@@ -206,6 +221,12 @@ fn parse_code_table(reader: &mut Reader<'_>, pinyin_count: u32) -> Result<CodeTa
     })
 }
 
+/// Parses QCEL word groups into the common [`Entry`] model.
+///
+/// Each group contains one shared code sequence followed by its words. Every
+/// word has a length-delimited UTF-16LE value and an extension of at least four
+/// bytes; the first little-endian `u32` in that extension is exposed as the
+/// entry weight and any remaining bytes are consumed but not interpreted.
 fn parse_word_table(
     reader: &mut Reader<'_>,
     record_count: u32,
@@ -283,6 +304,11 @@ fn parse_word_table(
 }
 
 impl CodeTable {
+    /// Resolves one raw word-table identifier to its textual QCEL code.
+    ///
+    /// Explicit table entries take precedence over implicit codes. Depending
+    /// on the table form, the resolver also handles QCEL's English alphabet
+    /// range and the special `#` identifier before reporting an unknown index.
     fn resolve(&self, raw_index: u16, offset: usize) -> Result<String> {
         let index = u32::from(raw_index);
 

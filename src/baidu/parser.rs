@@ -44,6 +44,7 @@ pub(crate) enum BaiduVariant {
 }
 
 impl BaiduVariant {
+    /// Returns the common format tag used in diagnostics and shared helpers.
     fn format(self) -> Format {
         match self {
             Self::Bdict => Format::Bdict,
@@ -65,6 +66,11 @@ struct Header {
     mixed: Section,
 }
 
+/// Parses a BDICT or BCD container using its variant-specific header rules.
+///
+/// The three Baidu sections are decoded independently and appended in regular,
+/// English, then mixed order. Text and coding values are preserved without
+/// normalization.
 pub(crate) fn parse(data: &[u8], variant: BaiduVariant) -> Result<Dictionary> {
     let format = variant.format();
     let header = parse_header(data, variant)?;
@@ -78,11 +84,21 @@ pub(crate) fn parse(data: &[u8], variant: BaiduVariant) -> Result<Dictionary> {
     Ok(Dictionary { metadata, entries })
 }
 
+/// Reads a BDICT or BCD file and delegates to [`parse`].
+///
+/// The path is used only for I/O diagnostics; it does not alter dictionary
+/// metadata or entry contents.
 pub(crate) fn parse_file(path: impl AsRef<Path>, variant: BaiduVariant) -> Result<Dictionary> {
     let data = read_file(path, variant.format())?;
     parse(&data, variant)
 }
 
+/// Reads and validates the fixed Baidu header and its section descriptors.
+///
+/// BDICT records explicit offsets and sizes for regular, English, and mixed
+/// sections. Some BCD files omit those descriptors and place their regular
+/// section immediately after the header, which is represented by the fallback
+/// section constructed below.
 fn parse_header(data: &[u8], variant: BaiduVariant) -> Result<Header> {
     let format = variant.format();
     let header = slice_at(data, 0, HEADER_LEN, format)?;
@@ -142,6 +158,10 @@ fn parse_header(data: &[u8], variant: BaiduVariant) -> Result<Header> {
     Ok(parsed)
 }
 
+/// Decodes Baidu's fixed-width metadata fields into the common model.
+///
+/// Name and description use common fields; author and example are preserved as
+/// source-specific values in `Metadata::extra`.
 fn parse_metadata(data: &[u8], format: Format) -> Result<Metadata> {
     let name = decode_fixed_utf16(data, NAME_RANGE, "dictionary name", format)?;
     let author = decode_fixed_utf16(data, AUTHOR_RANGE, "dictionary author", format)?;
@@ -165,6 +185,11 @@ fn parse_metadata(data: &[u8], format: Format) -> Result<Metadata> {
     })
 }
 
+/// Validates a declared section and creates a bounded reader for it.
+///
+/// The reader retains the section's source-file base offset so malformed field
+/// references can report absolute offsets. Counts are checked against the
+/// minimum record size before any section bytes are parsed.
 fn section_reader<'data>(
     data: &'data [u8],
     section: Section,
@@ -197,6 +222,11 @@ fn section_reader<'data>(
     Ok(Reader::section(bytes, section.offset, format))
 }
 
+/// Parses regular Baidu entries encoded as pinyin component pairs.
+///
+/// Each record stores a component count, a weight, initial/final byte pairs,
+/// and a UTF-16LE word. The `0xff` initial marker introduces an embedded ASCII
+/// code instead of a pinyin pair.
 fn parse_regular_entries(
     data: &[u8],
     section: Section,
@@ -284,6 +314,10 @@ fn parse_regular_entries(
     reader.finish("regular entries")
 }
 
+/// Parses Baidu English entries whose word and code are ASCII bytes.
+///
+/// The stored word is also exposed as the single code component, and the
+/// record's `u16` value becomes the common entry weight.
 fn parse_english_entries(
     data: &[u8],
     section: Section,
@@ -313,6 +347,11 @@ fn parse_english_entries(
     reader.finish("English entries")
 }
 
+/// Parses Baidu mixed records and their two supported header layouts.
+///
+/// A weighted layout stores the code length and weight directly; an unweighted
+/// layout stores the code length in the third header field. Both code and word
+/// are UTF-16LE strings, and the reader consumes the declared section exactly.
 fn parse_mixed_entries(
     data: &[u8],
     section: Section,

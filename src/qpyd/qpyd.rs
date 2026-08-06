@@ -81,7 +81,10 @@ pub fn parse_file(path: impl AsRef<Path>) -> Result<Dictionary> {
     parse(&data)
 }
 
-/// Reads and validates the fixed QPYD header.
+/// Reads the fixed QPYD header, validates its magic, and extracts its fields.
+///
+/// The version and raw file time are preserved for metadata consumers; this
+/// function does not reject a version merely because it is unfamiliar.
 fn parse_header(data: &[u8]) -> Result<Header> {
     let header = slice_at(data, 0, HEADER_LEN, FORMAT)?;
     if &header[..MAGIC.len()] != MAGIC {
@@ -232,6 +235,7 @@ fn parse_entries(data: &[u8], entry_count: usize) -> Result<Vec<Entry>> {
     Ok(entries)
 }
 
+/// Converts an empty metadata value to `None` while preserving non-empty text.
 fn optional_text(value: &str) -> Option<String> {
     if value.is_empty() {
         None
@@ -240,6 +244,7 @@ fn optional_text(value: &str) -> Option<String> {
     }
 }
 
+/// Retains a source-specific metadata field in the common `extra` map.
 fn insert_extra(extra: &mut BTreeMap<String, String>, key: &str, value: &str) {
     extra.insert(key.to_owned(), value.to_owned());
 }

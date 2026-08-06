@@ -159,6 +159,7 @@ impl<'data> Reader<'data> {
         }
     }
 
+    /// Returns the current absolute offset in the original source buffer.
     pub(crate) fn position(&self) -> usize {
         self.base + self.position
     }

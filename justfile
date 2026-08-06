@@ -1,22 +1,27 @@
 alias fmt := format
 alias doc := document
 
+# List all available recipes.
 default:
     @just --list
 
+# Format all Rust source files with rustfmt.
 format:
     @cargo fmt --all
     @echo "✅ All files formatted!"
 
+# Run Clippy for all targets and treat warnings as errors.
 lint:
     @cargo clippy --all-targets --all-features -- -D warnings
     @echo "✅ Clippy lint passed!"
 
+# Run unit, integration, and documentation tests.
 test:
     @cargo test --all-targets --all-features
     @cargo test --doc --all-features
     @echo "🎉 All tests passed!"
 
-document:
-    @cargo doc --no-deps --all-features
+# Generate API documentation. Pass `open` to open the generated index page.
+document open="":
+    @cargo doc --no-deps --all-features {{ if open == "open" { "--open" } else { "" } }}
     @echo "✅ Documentation generated successfully!"
