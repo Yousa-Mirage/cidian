@@ -6,8 +6,8 @@ rust-version = "1.85"
 
 description = "Parsers for Chinese input-method dictionary formats"
 readme = "README.md"
-homepage = "https://github.com/Yousa-Mirage/cidian"
-repository = "https://github.com/Yousa-Mirage/cidian"
+homepage = "https://github.com/Yousa-Mirage/cidian-rs"
+repository = "https://github.com/Yousa-Mirage/cidian-rs"
 license = "MIT"
 
 keywords = ["baidu", "chinese", "dictionary", "qpyd", "scel"]

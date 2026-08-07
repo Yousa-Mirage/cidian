@@ -1,22 +1,22 @@
-# cidian / 词典
+# cidian-rs / 词典
 
 <p align="center">
-  <a href="https://github.com/Yousa-Mirage/cidian/stargazers"><img src="https://img.shields.io/github/stars/Yousa-Mirage/cidian?style=social" alt="GitHub Stars"></a>
-  <a href="https://github.com/Yousa-Mirage/cidian/blob/main/LICENSE"><img src="https://img.shields.io/github/license/Yousa-Mirage/cidian?style=flat" alt="MIT license"></a>
-  <a href="https://github.com/Yousa-Mirage/cidian/releases"><img src="https://img.shields.io/github/v/release/Yousa-Mirage/cidian?style=flat" alt="GitHub release"></a>
-  <a href="https://crates.io/crates/cidian"><img src="https://img.shields.io/crates/v/cidian.svg?style=flat" alt="crates.io version"></a>
-  <a href="https://docs.rs/cidian"><img src="https://img.shields.io/docsrs/cidian?style=flat" alt="docs.rs documentation"></a>
+  <a href="https://github.com/Yousa-Mirage/cidian-rs/stargazers"><img src="https://img.shields.io/github/stars/Yousa-Mirage/cidian-rs?style=social" alt="GitHub Stars"></a>
+  <a href="https://github.com/Yousa-Mirage/cidian-rs/blob/main/LICENSE"><img src="https://img.shields.io/github/license/Yousa-Mirage/cidian-rs?style=flat" alt="MIT license"></a>
+  <a href="https://github.com/Yousa-Mirage/cidian-rs/releases"><img src="https://img.shields.io/github/v/release/Yousa-Mirage/cidian-rs?style=flat" alt="GitHub release"></a>
+  <a href="https://crates.io/crates/cidian-rs"><img src="https://img.shields.io/crates/v/cidian-rs.svg?style=flat" alt="crates.io version"></a>
+  <a href="https://docs.rs/cidian-rs"><img src="https://img.shields.io/docsrs/cidian-rs?style=flat" alt="docs.rs documentation"></a>
 </p>
 
 <p align="center">
-  <a href="https://github.com/Yousa-Mirage/cidian/blob/main/README.md">中文</a> ·
-  <a href="https://github.com/Yousa-Mirage/cidian/blob/main/README_en.md">English</a>
+  <a href="https://github.com/Yousa-Mirage/cidian-rs/blob/main/README.md">中文</a> ·
+  <a href="https://github.com/Yousa-Mirage/cidian-rs/blob/main/README_en.md">English</a>
 </p>
 
-`cidian` 将中文输入法词库文件解析为统一、轻量的 Rust 数据模型，目前支持搜狗（`.scel`）、 QQ
+`cidian-rs` 将中文输入法词库文件解析为统一、轻量的 Rust 数据模型，目前支持搜狗（`.scel`）、 QQ
 拼音（`.qcel`、`.qpyd`）与百度（`.bdict`、`.bcd`）词库。
 
-`cidian` 只负责解析，不进行规范化、排序、去重或导出。截断或损坏的输入返回结构化错误，而非静默修复。
+`cidian-rs` 只负责解析，不进行规范化、排序、去重或导出。截断或损坏的输入返回结构化错误，而非静默修复。
 
 ## 支持的格式
 

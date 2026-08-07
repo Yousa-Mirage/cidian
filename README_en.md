@@ -1,22 +1,22 @@
-# cidian / 词典
+# cidian-rs / 词典
 
 <p align="center">
-  <a href="https://github.com/Yousa-Mirage/cidian/stargazers"><img src="https://img.shields.io/github/stars/Yousa-Mirage/cidian?style=social" alt="GitHub Stars"></a>
-  <a href="https://github.com/Yousa-Mirage/cidian/blob/main/LICENSE"><img src="https://img.shields.io/github/license/Yousa-Mirage/cidian?style=flat" alt="MIT license"></a>
-  <a href="https://github.com/Yousa-Mirage/cidian/releases"><img src="https://img.shields.io/github/v/release/Yousa-Mirage/cidian?style=flat" alt="GitHub release"></a>
-  <a href="https://crates.io/crates/cidian"><img src="https://img.shields.io/crates/v/cidian.svg?style=flat" alt="crates.io version"></a>
-  <a href="https://docs.rs/cidian"><img src="https://img.shields.io/docsrs/cidian?style=flat" alt="docs.rs documentation"></a>
+  <a href="https://github.com/Yousa-Mirage/cidian-rs/stargazers"><img src="https://img.shields.io/github/stars/Yousa-Mirage/cidian-rs?style=social" alt="GitHub Stars"></a>
+  <a href="https://github.com/Yousa-Mirage/cidian-rs/blob/main/LICENSE"><img src="https://img.shields.io/github/license/Yousa-Mirage/cidian-rs?style=flat" alt="MIT license"></a>
+  <a href="https://github.com/Yousa-Mirage/cidian-rs/releases"><img src="https://img.shields.io/github/v/release/Yousa-Mirage/cidian-rs?style=flat" alt="GitHub release"></a>
+  <a href="https://crates.io/crates/cidian-rs"><img src="https://img.shields.io/crates/v/cidian-rs.svg?style=flat" alt="crates.io version"></a>
+  <a href="https://docs.rs/cidian-rs"><img src="https://img.shields.io/docsrs/cidian-rs?style=flat" alt="docs.rs documentation"></a>
 </p>
 
 <p align="center">
-  <a href="https://github.com/Yousa-Mirage/cidian/blob/main/README.md">中文</a> ·
-  <a href="https://github.com/Yousa-Mirage/cidian/blob/main/README_en.md">English</a>
+  <a href="https://github.com/Yousa-Mirage/cidian-rs/blob/main/README.md">中文</a> ·
+  <a href="https://github.com/Yousa-Mirage/cidian-rs/blob/main/README_en.md">English</a>
 </p>
 
-`cidian` parses Chinese input-method dictionary files into a small, common Rust data model. It supports
+`cidian-rs` parses Chinese input-method dictionary files into a small, common Rust data model. It supports
 Sogou (`.scel`), QQ Pinyin (`.qcel`, `.qpyd`), and Baidu (`.bdict`, `.bcd`) dictionaries.
 
-`cidian` is concerned only with parsing: it does not normalize, sort, deduplicate, or export entries.
+`cidian-rs` is concerned only with parsing: it does not normalize, sort, deduplicate, or export entries.
 Truncated or corrupted input fails with a structured error instead of being silently repaired.
 
 ## Supported formats
