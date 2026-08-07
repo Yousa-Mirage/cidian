@@ -1,6 +1,8 @@
 # Changelog
 
-本文件记录 `cidian` 的版本变更。
+## cidian-rs 0.1.1
+
+- 将项目重命名为 `cidian-rs`
 
 ## cidian 0.1.0
 

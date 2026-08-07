@@ -76,7 +76,7 @@ mod tests {
     #[test]
     fn bcd_parse_file_exposes_io_context() {
         let path =
-            std::env::temp_dir().join(format!("cidian-missing-bcd-{}.bcd", std::process::id()));
+            std::env::temp_dir().join(format!("cidian-rs-missing-bcd-{}.bcd", std::process::id()));
         let error = match super::bcd::parse_file(&path) {
             Ok(_) => panic!("missing BCD file unexpectedly parsed"),
             Err(error) => error,
@@ -94,8 +94,10 @@ mod tests {
 
     #[test]
     fn bdict_parse_file_exposes_io_context() {
-        let path =
-            std::env::temp_dir().join(format!("cidian-missing-bdict-{}.bdict", std::process::id()));
+        let path = std::env::temp_dir().join(format!(
+            "cidian-rs-missing-bdict-{}.bdict",
+            std::process::id()
+        ));
         let error = match super::bdict::parse_file(&path) {
             Ok(_) => panic!("missing BDICT file unexpectedly parsed"),
             Err(error) => error,

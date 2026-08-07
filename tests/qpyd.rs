@@ -7,7 +7,7 @@ use support::{assert_entry, parse_for_test, read_fixture};
 
 // These properties were independently cross-checked by decoding the zlib
 // stream and index records with Python's standard library. Do not regenerate
-// them from `cidian` alone without reviewing the result.
+// them from `cidian-rs` alone without reviewing the result.
 macro_rules! qpyd_golden_test {
     (
         $test_name:ident,

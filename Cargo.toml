@@ -1,5 +1,5 @@
 [package]
-name = "cidian"
+name = "cidian-rs"
 version = "0.1.0"
 edition = "2024"
 rust-version = "1.85"
@@ -21,6 +21,9 @@ exclude = [
   "justfile",
   "tests/**"
 ]
+
+[lib]
+name = "cidian"
 
 [[bench]]
 harness = false

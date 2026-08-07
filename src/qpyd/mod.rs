@@ -303,7 +303,7 @@ mod tests {
     fn parse_file_matches_in_memory_parse() -> TestResult {
         let data = fixture(&[entry("ci'ao", "次奥")]);
         let expected = must_parse(&data);
-        let dictionary = parse_temp_file("cidian-qpyd", &data)?;
+        let dictionary = parse_temp_file("cidian-rs-qpyd", &data)?;
 
         assert_eq!(dictionary, expected);
         Ok(())
@@ -312,7 +312,7 @@ mod tests {
     #[test]
     fn parse_file_exposes_qpyd_io_context() {
         let path = std::env::temp_dir().join(format!(
-            "cidian-missing-qpyd-{}-{}.qpyd",
+            "cidian-rs-missing-qpyd-{}-{}.qpyd",
             std::process::id(),
             line!()
         ));

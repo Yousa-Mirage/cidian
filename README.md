@@ -34,7 +34,7 @@
 
 ```toml
 [dependencies]
-cidian = "0.1"
+cidian-rs = "0.1"
 ```
 
 从文件解析词库：
@@ -60,13 +60,14 @@ let dictionary = cidian::qpyd::parse(&bytes)?;
 
 ## 数据模型
 
-所有解析器返回统一的 [`Dictionary`](https://docs.rs/cidian/latest/cidian/struct.Dictionary.html) 类型：
+所有解析器返回统一的 [`Dictionary`](https://docs.rs/cidian-rs/latest/cidian/struct.Dictionary.html)
+类型：
 
-- **`metadata`** --- [`Metadata`](https://docs.rs/cidian/latest/cidian/struct.Metadata.html)
+- **`metadata`** --- [`Metadata`](https://docs.rs/cidian-rs/latest/cidian/struct.Metadata.html)
   结构：公共字段 `name`、`category`、`description`（均为 `Option<String>`），以及 `extra`
   映射（存放格式特有的额外元数据）。
 - **`entries`** --- 按源文件顺序排列的词条。每个
-  [`Entry`](https://docs.rs/cidian/latest/cidian/struct.Entry.html) 包含：
+  [`Entry`](https://docs.rs/cidian-rs/latest/cidian/struct.Entry.html) 包含：
   - `word` --- 词或短语，与源文件存储的完全一致。
   - `code` --- 按源格式拆分的编码组件：SCEL/QCEL 为拼音音节或拉丁编码，QPYD
     为按撇号分隔的拼音，百度词条为拼音音节或整体编码。
@@ -75,7 +76,7 @@ let dictionary = cidian::qpyd::parse(&bytes)?;
 ## 错误处理
 
 所有解析器返回统一的 `cidian::Result<T>`，错误类型为结构化的
-[`cidian::Error`](https://docs.rs/cidian/latest/cidian/enum.Error.html)。错误携带词典的 `Format`
+[`cidian::Error`](https://docs.rs/cidian-rs/latest/cidian/enum.Error.html)。错误携带词典的 `Format`
 及相关细节（如文件路径、字节偏移、字段名），因此无需解析错误消息即可区分失败原因：
 
 ```rust

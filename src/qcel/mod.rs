@@ -331,7 +331,7 @@ mod tests {
     fn parse_file_matches_memory_parse() -> TestResult {
         let data = fixture(&[0x78, 0x56, 0x34, 0x12]);
         let expected = must_parse(&data);
-        let parsed = parse_temp_file("cidian-qcel", &data)?;
+        let parsed = parse_temp_file("cidian-rs-qcel", &data)?;
 
         assert_eq!(parsed, expected);
         Ok(())
@@ -340,7 +340,7 @@ mod tests {
     #[test]
     fn parse_file_exposes_io_error_context() {
         let path = std::env::temp_dir()
-            .join(format!("cidian-missing-qcel-{}", std::process::id()))
+            .join(format!("cidian-rs-missing-qcel-{}", std::process::id()))
             .join("dictionary.qcel");
 
         let error = match parse_file(&path) {

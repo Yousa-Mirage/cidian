@@ -456,7 +456,7 @@ mod tests {
         data[NAME_RANGE].fill(0);
         let expected = must_parse(&data);
 
-        let dictionary = parse_temp_file("cidian-no-name", &data)?;
+        let dictionary = parse_temp_file("cidian-rs-no-name", &data)?;
         assert_eq!(dictionary, expected);
         assert_eq!(dictionary.metadata.name, None);
 
@@ -468,7 +468,7 @@ mod tests {
         let data = fixture(&[1, 0]);
         let expected = must_parse(&data);
 
-        let dictionary = parse_temp_file("cidian-different-name", &data)?;
+        let dictionary = parse_temp_file("cidian-rs-different-name", &data)?;
         assert_eq!(dictionary, expected);
         assert_eq!(dictionary.metadata.name.as_deref(), Some("测试词库"));
 
@@ -478,7 +478,10 @@ mod tests {
     #[test]
     fn parse_file_exposes_io_error_context() {
         let path = std::env::temp_dir()
-            .join(format!("cidian-missing-directory-{}", std::process::id()))
+            .join(format!(
+                "cidian-rs-missing-directory-{}",
+                std::process::id()
+            ))
             .join("dictionary.scel");
 
         let error = match parse_file(&path) {

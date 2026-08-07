@@ -7,7 +7,7 @@ use support::{assert_entry, parse_for_test, read_fixture};
 
 // These are golden properties of the exact fixture bytes checked into this
 // repository. They were cross-checked with an independent reference parser;
-// do not regenerate them from `cidian` alone without reviewing the result.
+// do not regenerate them from `cidian-rs` alone without reviewing the result.
 macro_rules! scel_golden_test {
     (
         $test_name:ident,

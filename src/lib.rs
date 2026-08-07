@@ -1,8 +1,8 @@
 //! Parsers for Chinese input-method dictionary formats.
 //!
-//! `cidian` converts source-specific dictionary files into a small common data
-//! model. It deliberately does not normalize entries or export them to another
-//! dictionary format.
+//! `cidian-rs` converts source-specific dictionary files into a
+//! small common data model. It deliberately does not normalize entries or
+//! export them to another dictionary format.
 
 #![deny(warnings)]
 #![deny(dead_code)]

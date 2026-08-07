@@ -5,7 +5,7 @@ use std::io;
 use std::path::PathBuf;
 use std::str::Utf8Error;
 
-/// A dictionary format understood by `cidian`.
+/// A dictionary format understood by `cidian-rs`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 #[non_exhaustive]
 pub enum Format {

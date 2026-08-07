@@ -13,8 +13,8 @@
   <a href="https://github.com/Yousa-Mirage/cidian-rs/blob/main/README_en.md">English</a>
 </p>
 
-`cidian-rs` parses Chinese input-method dictionary files into a small, common Rust data model. It supports
-Sogou (`.scel`), QQ Pinyin (`.qcel`, `.qpyd`), and Baidu (`.bdict`, `.bcd`) dictionaries.
+`cidian-rs` parses Chinese input-method dictionary files into a small, common Rust data model. It
+supports Sogou (`.scel`), QQ Pinyin (`.qcel`, `.qpyd`), and Baidu (`.bdict`, `.bcd`) dictionaries.
 
 `cidian-rs` is concerned only with parsing: it does not normalize, sort, deduplicate, or export entries.
 Truncated or corrupted input fails with a structured error instead of being silently repaired.
@@ -35,7 +35,7 @@ Add the dependency:
 
 ```toml
 [dependencies]
-cidian = "0.1"
+cidian-rs = "0.1"
 ```
 
 Parse a dictionary from a file:
@@ -61,14 +61,14 @@ Every format module exposes the same two functions: `parse(&[u8]) -> Result<Dict
 
 ## Data model
 
-All parsers return the same [`Dictionary`](https://docs.rs/cidian/latest/cidian/struct.Dictionary.html)
-type:
+All parsers return the same
+[`Dictionary`](https://docs.rs/cidian-rs/latest/cidian/struct.Dictionary.html) type:
 
-- **`metadata`** --- a [`Metadata`](https://docs.rs/cidian/latest/cidian/struct.Metadata.html) with the
-  common fields `name`, `category`, and `description` (each `Option<String>`), plus `extra`, a map of
+- **`metadata`** --- a [`Metadata`](https://docs.rs/cidian-rs/latest/cidian/struct.Metadata.html) with
+  the common fields `name`, `category`, and `description` (each `Option<String>`), plus `extra`, a map of
   source-specific metadata.
 - **`entries`** --- entries in source order. Each
-  [`Entry`](https://docs.rs/cidian/latest/cidian/struct.Entry.html) has:
+  [`Entry`](https://docs.rs/cidian-rs/latest/cidian/struct.Entry.html) has:
   - `word` --- the word or phrase, exactly as stored by the source.
   - `code` --- the coding components in source order: pinyin syllables or Latin codes for SCEL/QCEL,
     apostrophe-delimited pinyin for QPYD, and pinyin syllables or the stored code as a single component
@@ -78,7 +78,7 @@ type:
 ## Errors
 
 Every parser returns the unified `cidian::Result<T>` with the structured
-[`cidian::Error`](https://docs.rs/cidian/latest/cidian/enum.Error.html) type. Errors retain the
+[`cidian::Error`](https://docs.rs/cidian-rs/latest/cidian/enum.Error.html) type. Errors retain the
 dictionary `Format` and relevant details such as the file path, byte offset, and field name, so you can
 handle failures without parsing error messages:
 

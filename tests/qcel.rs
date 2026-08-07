@@ -7,7 +7,7 @@ use support::{assert_entry, parse_for_test, read_fixture};
 
 // These properties were independently checked by following the byte counts,
 // pinyin indices, UTF-16LE fields, and u32 extensions with Python's standard
-// library. Do not regenerate them from `cidian` alone without review.
+// library. Do not regenerate them from `cidian-rs` alone without review.
 macro_rules! qcel_golden_test {
     (
         $test_name:ident,

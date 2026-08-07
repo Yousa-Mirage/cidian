@@ -45,7 +45,7 @@ const CASES: [Case; 4] = [
 ];
 
 fn main() {
-    println!("cidian parser benchmark: {ITERATIONS} parses per fixture");
+    println!("cidian-rs parser benchmark: {ITERATIONS} parses per fixture");
 
     for case in CASES {
         benchmark_case(case);

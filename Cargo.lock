@@ -3,7 +3,7 @@
 version = 4
 
 [[package]]
-name = "cidian"
+name = "cidian-rs"
 version = "0.1.0"
 dependencies = [
  "thiserror",
